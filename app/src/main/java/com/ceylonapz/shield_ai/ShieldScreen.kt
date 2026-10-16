@@ -10,6 +10,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -22,7 +28,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -44,6 +49,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -85,24 +91,37 @@ fun ShieldScreen(vm: ShieldViewModel) {
         Column(
             Modifier
                 .fillMaxSize()
-                .safeDrawingPadding()
-                .verticalScroll(scroll)
-                .padding(horizontal = 20.dp, vertical = 12.dp),
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)),
         ) {
-            Header()
-            Spacer(Modifier.height(20.dp))
-            if (state is UiState.Done) {
-                ResultView(state, vm)
-            } else {
-                InputView(vm, state)
+            Surface(
+                modifier = Modifier.zIndex(1f),
+                color = MaterialTheme.colorScheme.background,
+                shadowElevation = if (scroll.value > 0) 3.dp else 0.dp,
+            ) {
+                Box(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 20.dp, vertical = 12.dp)) {
+                    Header()
+                }
             }
-            Spacer(Modifier.height(32.dp))
-            Text(
-                "Messages are checked and then discarded. Nothing is stored.\n" +
-                    "Runs on Gemini in Vertex AI, the Web Risk API and Cloud Run.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Column(
+                Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scroll)
+                    .padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 12.dp),
+            ) {
+                if (state is UiState.Done) {
+                    ResultView(state, vm)
+                } else {
+                    InputView(vm, state)
+                }
+                Spacer(Modifier.height(32.dp))
+                Text(
+                    "Personal messages are never stored. Only the results for messages judged as scams are " +
+                            "cached for 3 days under an anonymous fingerprint.\n" +
+                            "Runs on Gemini in Vertex AI, the Web Risk API, Cloud Run, Firestore and Firebase Hosting.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }
@@ -254,6 +273,24 @@ private fun ResultView(state: UiState.Done, vm: ShieldViewModel) {
                 Spacer(Modifier.width(10.dp))
                 Text("${a.riskScore}/100", fontWeight = FontWeight.Bold)
             }
+        }
+    }
+
+    //cached view
+    if (a.cached) {
+        Spacer(Modifier.height(14.dp))
+        Surface(
+            shape = RoundedCornerShape(10.dp),
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(
+                "⚡ Seen before: this exact scam has been checked ${a.seenCount} times. " +
+                        "Answered instantly from the Shield-AI scam cache.",
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
         }
     }
 

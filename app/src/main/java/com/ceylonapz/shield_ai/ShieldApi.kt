@@ -21,13 +21,15 @@ data class Analysis(
     val actions: List<String>,
     val urlChecks: List<UrlCheck>,
     val latencyMs: Long,
+    val cached: Boolean,
+    val seenCount: Int
 )
 
 class ShieldApiException(message: String) : Exception(message)
 
 /** Same Cloud Run backend as the web app: Web Risk + Gemini on Vertex AI. */
 object ShieldApi {
-    const val BASE_URL = "https://shield-ai-api-454732198588.asia-southeast1.run.app"
+    const val BASE_URL = "https://shield-ai-2026.web.app"
 
     suspend fun analyze(text: String, replyLanguage: String): Analysis = withContext(Dispatchers.IO) {
         val conn = (URL("$BASE_URL/analyze").openConnection() as HttpURLConnection).apply {
@@ -76,6 +78,8 @@ object ShieldApi {
                 )
             },
             latencyMs = j.optLong("latency_ms"),
+            cached = j.optBoolean("cached"),
+            seenCount = j.optInt("seen_count", 1),
         )
     }
 }

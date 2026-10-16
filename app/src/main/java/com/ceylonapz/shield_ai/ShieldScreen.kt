@@ -233,8 +233,8 @@ private fun InputView(vm: ShieldViewModel, state: UiState) {
 private fun ResultView(state: UiState.Done, vm: ShieldViewModel) {
     val context = LocalContext.current
     val dark = isSystemInDarkTheme()
-    val a = state.analysis
-    val color = verdictColor(a.verdict, dark)
+    val analysis = state.analysis
+    val color = verdictColor(analysis.verdict, dark)
 
     // The message itself, with the suspicious parts marked. Tap to edit.
     Surface(
@@ -243,7 +243,7 @@ private fun ResultView(state: UiState.Done, vm: ShieldViewModel) {
         modifier = Modifier.fillMaxWidth().clickable { vm.edit() },
     ) {
         Text(
-            text = highlight(state.text, a.redFlags, if (dark) ShieldColors.MarkDark else ShieldColors.MarkLight),
+            text = highlight(state.text, analysis.redFlags, if (dark) ShieldColors.MarkDark else ShieldColors.MarkLight),
             modifier = Modifier.padding(18.dp),
             fontSize = 18.sp,
             lineHeight = 28.sp,
@@ -255,8 +255,8 @@ private fun ResultView(state: UiState.Done, vm: ShieldViewModel) {
         Box(Modifier.width(6.dp).fillMaxHeight().background(color))
         Spacer(Modifier.width(16.dp))
         Column {
-            Text(verdictTitle(a.verdict), color = color, fontSize = 34.sp, lineHeight = 38.sp, fontWeight = FontWeight.ExtraBold)
-            localVerdict(a)?.let {
+            Text(verdictTitle(analysis.verdict), color = color, fontSize = 34.sp, lineHeight = 38.sp, fontWeight = FontWeight.ExtraBold)
+            localVerdict(analysis)?.let {
                 Text(it, color = color, fontSize = 20.sp, fontWeight = FontWeight.Bold)
             }
             Spacer(Modifier.height(10.dp))
@@ -264,20 +264,20 @@ private fun ResultView(state: UiState.Done, vm: ShieldViewModel) {
                 Text("Risk", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.width(10.dp))
                 LinearProgressIndicator(
-                    progress = { a.riskScore / 100f },
+                    progress = { analysis.riskScore / 100f },
                     modifier = Modifier.weight(1f).height(10.dp),
                     color = color,
                     trackColor = MaterialTheme.colorScheme.outline,
                     strokeCap = StrokeCap.Round,
                 )
                 Spacer(Modifier.width(10.dp))
-                Text("${a.riskScore}/100", fontWeight = FontWeight.Bold)
+                Text("${analysis.riskScore}/100", fontWeight = FontWeight.Bold)
             }
         }
     }
 
     //cached view
-    if (a.cached) {
+    if (analysis.cached) {
         Spacer(Modifier.height(14.dp))
         Surface(
             shape = RoundedCornerShape(10.dp),
@@ -285,7 +285,7 @@ private fun ResultView(state: UiState.Done, vm: ShieldViewModel) {
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(
-                "⚡ Seen before: this exact scam has been checked ${a.seenCount} times. " +
+                "⚡ Seen before: this exact scam has been checked ${analysis.seenCount} times. " +
                         "Answered instantly from the Shield-AI scam cache.",
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                 fontSize = 14.sp,
@@ -294,10 +294,10 @@ private fun ResultView(state: UiState.Done, vm: ShieldViewModel) {
         }
     }
 
-    Section("Why") { Text(a.explanation, fontSize = 17.sp, lineHeight = 27.sp) }
-    if (a.redFlags.isNotEmpty()) Section("Warning signs") { Dots(a.redFlags) }
-    if (a.urlChecks.isNotEmpty()) Section("Links checked") {
-        a.urlChecks.forEach { c ->
+    Section("Why") { Text(analysis.explanation, fontSize = 17.sp, lineHeight = 27.sp) }
+    if (analysis.redFlags.isNotEmpty()) Section("Warning signs") { Dots(analysis.redFlags) }
+    if (analysis.urlChecks.isNotEmpty()) Section("Links checked") {
+        analysis.urlChecks.forEach { c ->
             Column(Modifier.padding(vertical = 6.dp)) {
                 Text(
                     if (c.malicious) "Flagged by Google Web Risk" else "Not on Google's blocklist",
@@ -309,11 +309,11 @@ private fun ResultView(state: UiState.Done, vm: ShieldViewModel) {
             }
         }
     }
-    if (a.actions.isNotEmpty()) Section("What to do now") { Dots(a.actions) }
+    if (analysis.actions.isNotEmpty()) Section("What to do now") { Dots(analysis.actions) }
 
     Spacer(Modifier.height(28.dp))
     Button(
-        onClick = { shareWarning(context, a) },
+        onClick = { shareWarning(context, analysis) },
         modifier = Modifier.fillMaxWidth().height(54.dp),
         shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.buttonColors(
